@@ -105,7 +105,6 @@ Cuando acabes el diagnóstico, invita a pulsar el botón de continuar.`
     const response = await client.responses.create({
       model: process.env.OPENAI_MODEL || "gpt-5-mini",
       input,
-      temperature: 0.6,
       max_output_tokens: 900
     });
 
