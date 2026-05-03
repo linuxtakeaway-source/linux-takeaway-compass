@@ -5,7 +5,7 @@ const profiles = {
   },
   migracion: {
     title: "Migración a Linux",
-    first: "Perfecto. Primera pregunta: ¿para qué usas principalmente el ordenador: trabajo/ofimática, gaming, desarrollo, estudios o uso personal?"
+    first: "Perfecto. Primera pregunta: ¿para qué usas principalmente el ordenador: trabajo/ofimática, gaming, desarrollo o uso personal?"
   },
   soberania: {
     title: "Soberanía Digital",
@@ -23,42 +23,26 @@ const chatTitle = document.getElementById("chatTitle");
 const messagesDiv = document.getElementById("messages");
 const chatForm = document.getElementById("chatForm");
 const messageInput = document.getElementById("messageInput");
-const resetBtn = document.getElementById("resetBtn");
-const payBtn = document.getElementById("payBtn");
 
 function addMessage(role, content) {
   messages.push({ role, content });
   const div = document.createElement("div");
   div.className = `msg ${role}`;
-  div.textContent = content;
+  div.innerHTML = content; // 👈 CAMBIO CLAVE (antes era textContent)
   messagesDiv.appendChild(div);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-  if (role === "assistant" && content.toLowerCase().includes("continuar con mi ruta")) {
-    payBtn.classList.remove("hidden");
-  }
 }
 
-profileButtons.forEach(btn => {
+profileButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
     currentProfile = btn.dataset.profile;
     messages = [];
     messagesDiv.innerHTML = "";
-    payBtn.classList.add("hidden");
-    payBtn.href = "https://linuxtakeaway.online/";
     chatTitle.textContent = profiles[currentProfile].title;
     profilesSection.classList.add("hidden");
     chatWrap.classList.remove("hidden");
     addMessage("assistant", profiles[currentProfile].first);
-    messageInput.focus();
   });
-});
-
-resetBtn.addEventListener("click", () => {
-  currentProfile = null;
-  messages = [];
-  chatWrap.classList.add("hidden");
-  profilesSection.classList.remove("hidden");
 });
 
 chatForm.addEventListener("submit", async (e) => {
@@ -68,13 +52,6 @@ chatForm.addEventListener("submit", async (e) => {
 
   addMessage("user", text);
   messageInput.value = "";
-  messageInput.disabled = true;
-
-  const loading = document.createElement("div");
-  loading.className = "msg assistant";
-  loading.textContent = "Pensando...";
-  messagesDiv.appendChild(loading);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
   try {
     const res = await fetch("/api/chat", {
@@ -84,18 +61,8 @@ chatForm.addEventListener("submit", async (e) => {
     });
 
     const data = await res.json();
-    loading.remove();
-
-    if (!res.ok) {
-      addMessage("assistant", data.error || "Error al conectar con la IA.");
-    } else {
-      addMessage("assistant", data.reply);
-    }
+    addMessage("assistant", data.reply);
   } catch (err) {
-    loading.remove();
-    addMessage("assistant", "Error de conexión. Revisa que el servidor esté funcionando.");
-  } finally {
-    messageInput.disabled = false;
-    messageInput.focus();
+    addMessage("assistant", "Error de conexión.");
   }
 });
