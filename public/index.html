@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Linux TakeAway Compass</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="badge">Linux TakeAway Compass</div>
+      <h1>Descubre tu ruta Linux en 2 minutos</h1>
+      <p class="lead">Elige tu punto de partida. Te haré un test rápido, te daré tu primer paso y una ruta clara.</p>
+    </section>
+
+    <section id="profiles" class="cards">
+      <button class="card" data-profile="cero">
+        <span>🟢</span>
+        <h2>Empiezo desde cero</h2>
+        <p>No sé Linux y quiero saber por dónde empezar sin romper nada.</p>
+      </button>
+
+      <button class="card" data-profile="migracion">
+        <span>🟡</span>
+        <h2>Quiero pasarme a Linux</h2>
+        <p>He oído hablar de Linux, pero no sé distro, riesgos ni pasos.</p>
+      </button>
+
+      <button class="card" data-profile="soberania">
+        <span>🔴</span>
+        <h2>Quiero soberanía digital</h2>
+        <p>Ya me preocupa privacidad, corporaciones, datos y control digital.</p>
+      </button>
+    </section>
+
+    <section id="chatWrap" class="chat-wrap hidden">
+      <div class="chat-head">
+        <div>
+          <div class="badge small">Tutor Linux TakeAway</div>
+          <h2 id="chatTitle">Tu ruta</h2>
+        </div>
+        <button id="resetBtn" class="ghost">Cambiar perfil</button>
+      </div>
+
+      <div id="messages" class="messages"></div>
+
+      <form id="chatForm" class="chat-form">
+        <input id="messageInput" autocomplete="off" placeholder="Responde aquí..." />
+        <button type="submit">Enviar</button>
+      </form>
+
+      <a id="payBtn" class="pay hidden" href="#" target="_blank" rel="noopener">
+        Continuar con mi ruta Linux TakeAway
+      </a>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
