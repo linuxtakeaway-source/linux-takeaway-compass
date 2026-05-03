@@ -7,6 +7,10 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 
+const KIT_GRATUITO_URL = "https://www.linuxtakeaway.online/soberania";
+const TEST_SOBERANIA_URL = "https://linuxtakeaway.online/test-soberania";
+const CURSO_SOBERANIA_URL = "https://www.linuxtakeaway.online/score_soberania";
+
 if (!process.env.OPENAI_API_KEY) {
   console.warn("AVISO: falta OPENAI_API_KEY en variables de entorno.");
 }
@@ -21,63 +25,91 @@ app.use(express.static("public"));
 const SYSTEM_BASE = `
 Eres el coach de Linux TakeAway.
 
-Objetivo de negocio:
-- Guiar al usuario según su perfil.
+Objetivo:
 - Hacer un test corto.
 - Dar diagnóstico claro.
 - Dar un primer paso práctico.
-- Llevar de forma natural al producto de entrada de 12€.
+- Redirigir al usuario según su perfil.
 
 Tono:
 - Español de España.
 - Claro, directo, humano.
 - Cero tecnicismos innecesarios.
 - No sueltes ladrillos.
-- Máximo 6 preguntas en total.
 - Haz una pregunta cada vez.
-- Cuando tengas suficiente contexto, da resultado.
-
-Formato final obligatorio cuando termines el diagnóstico:
-1. Perfil detectado
-2. Diagnóstico en 3 líneas
-3. Primer paso recomendado
-4. Mini ejercicio
-5. Siguiente paso: "Continuar con mi ruta Linux TakeAway"
+- Máximo 4 preguntas antes de cerrar.
 `;
 
 const PROFILE_PROMPTS = {
   cero: `
-Perfil inicial: usuario que no sabe nada de Linux.
-Hazle un test amable para saber:
+Perfil: usuario que empieza desde cero.
+Pregúntale por:
 - si viene de Windows
-- para qué usa el ordenador
+- uso principal del ordenador
 - miedo principal
-- nivel técnico
 - objetivo real
-No le hables todavía de comandos avanzados.
+
+Al cerrar:
+- dile que necesita empezar con bases claras
+- envíalo al kit gratuito
 `,
   migracion: `
-Perfil inicial: usuario que quiere pasarse a Linux pero no sabe cómo.
-Hazle un test para saber:
-- equipo que usa
-- si depende de Office, juegos o software concreto
-- si quiere dual boot o probar sin instalar
+Perfil: usuario que quiere pasarse a Linux.
+Pregúntale por:
+- uso principal del PC
+- dependencia de Office/juegos/software
 - miedo principal
-- estabilidad vs novedad
-Termina recomendando una ruta, no una distro a lo loco.
+- si quiere probar sin instalar o cambiar del todo
+
+Al cerrar:
+- dile que antes de migrar debe entender su nivel de exposición y dependencia digital
+- envíalo al test de soberanía
 `,
   soberania: `
-Perfil inicial: usuario interesado en soberanía digital, privacidad y control.
-Hazle un mini iTAG de exposición digital:
+Perfil: usuario interesado en soberanía digital.
+Pregúntale por:
 - sistema operativo
 - navegador
 - contraseñas
-- nube
-- correo
-- IA/herramientas online
-Da score: Bajo / Medio / Alto.
+- nube/correo
+
+Al cerrar:
+- dale score Bajo / Medio / Alto
+- dile 3 riesgos claros
+- envíalo al curso de soberanía digital
 `
 };
+
+function getFinalCTA(profile) {
+  if (profile === "cero") {
+    return `
+
+👉 Siguiente paso:
+Descarga el kit gratuito para empezar con una base clara:
+
+${KIT_GRATUITO_URL}`;
+  }
+
+  if (profile === "migracion") {
+    return `
+
+👉 Siguiente paso:
+Antes de cambiarte a Linux, haz este test y descubre tu nivel real de exposición digital:
+
+${TEST_SOBERANIA_URL}`;
+  }
+
+  if (profile === "soberania") {
+    return `
+
+👉 Siguiente paso:
+Si quieres recuperar control de verdad, entra al curso de soberanía digital:
+
+${CURSO_SOBERANIA_URL}`;
+  }
+
+  return "";
+}
 
 app.post("/api/chat", async (req, res) => {
   try {
@@ -87,40 +119,60 @@ app.post("/api/chat", async (req, res) => {
       return res.status(400).json({ error: "Perfil no válido" });
     }
 
-    const safeMessages = Array.isArray(messages) ? messages.slice(-12) : [];
+    const safeMessages = Array.isArray(messages) ? messages.slice(-8) : [];
+
+    // Cierre automático para no gastar API infinito
+    if (safeMessages.length >= 8) {
+      return res.json({
+        reply: `Ya tengo suficiente para orientarte.
+
+${getFinalCTA(profile)}`
+      });
+    }
 
     const input = [
       {
         role: "system",
-        content: SYSTEM_BASE + "\n" + PROFILE_PROMPTS[profile] + `
-Enlace de pago/siguiente paso: ${process.env.PAYMENT_URL || "https://linuxtakeaway.online/"}
-Cuando acabes el diagnóstico, invita a pulsar el botón de continuar.`
+        content:
+          SYSTEM_BASE +
+          "\n" +
+          PROFILE_PROMPTS[profile] +
+          `
+Cuando tengas suficiente contexto, cierra con:
+1. Perfil detectado
+2. Diagnóstico breve
+3. Primer paso recomendado
+4. Mini ejercicio
+5. Este CTA obligatorio:
+${getFinalCTA(profile)}
+`
       },
-      ...safeMessages.map(m => ({
+      ...safeMessages.map((m) => ({
         role: m.role === "assistant" ? "assistant" : "user",
-        content: String(m.content || "").slice(0, 3000)
+        content: String(m.content || "").slice(0, 2000)
       }))
     ];
 
     const response = await client.responses.create({
       model: process.env.OPENAI_MODEL || "gpt-5-mini",
       input,
-      max_output_tokens: 900
+      max_output_tokens: 700
     });
 
     res.json({ reply: response.output_text });
   } catch (err) {
     console.error(err);
     res.status(500).json({
-      error: "Error hablando con la IA. Revisa OPENAI_API_KEY, saldo de API y logs del servidor."
+      error:
+        "Error hablando con la IA. Revisa OPENAI_API_KEY, saldo de API y logs del servidor."
     });
   }
 });
 
 app.get("/health", (req, res) => {
-  res.json({ ok: true, app: "Linux TakeAway Compass MVP" });
+  res.json({ ok: true, app: "Linux TakeAway Punto Cero" });
 });
 
 app.listen(port, () => {
-  console.log(`Linux TakeAway Compass MVP funcionando en http://localhost:${port}`);
+  console.log(`Linux TakeAway Punto Cero funcionando en http://localhost:${port}`);
 });
