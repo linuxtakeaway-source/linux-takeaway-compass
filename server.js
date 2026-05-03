@@ -84,28 +84,22 @@ function getFinalCTA(profile) {
   if (profile === "cero") {
     return `
 
-👉 Siguiente paso:
-Descarga el kit gratuito para empezar con una base clara:
-
-${KIT_GRATUITO_URL}`;
+👉 Siguiente paso:<br>
+<a href="${KIT_GRATUITO_URL}" target="_blank">Descargar kit gratuito</a>`;
   }
 
   if (profile === "migracion") {
     return `
 
-👉 Siguiente paso:
-Antes de cambiarte a Linux, haz este test y descubre tu nivel real de exposición digital:
-
-${TEST_SOBERANIA_URL}`;
+👉 Siguiente paso:<br>
+<a href="${TEST_SOBERANIA_URL}" target="_blank">Hacer test de soberanía</a>`;
   }
 
   if (profile === "soberania") {
     return `
 
-👉 Siguiente paso:
-Si quieres recuperar control de verdad, entra al curso de soberanía digital:
-
-${CURSO_SOBERANIA_URL}`;
+👉 Siguiente paso:<br>
+<a href="${CURSO_SOBERANIA_URL}" target="_blank">Ir al curso de soberanía</a>`;
   }
 
   return "";
@@ -121,12 +115,9 @@ app.post("/api/chat", async (req, res) => {
 
     const safeMessages = Array.isArray(messages) ? messages.slice(-8) : [];
 
-    // Cierre automático para no gastar API infinito
     if (safeMessages.length >= 8) {
       return res.json({
-        reply: `Ya tengo suficiente para orientarte.
-
-${getFinalCTA(profile)}`
+        reply: `Ya tengo suficiente para orientarte.<br><br>${getFinalCTA(profile)}`
       });
     }
 
